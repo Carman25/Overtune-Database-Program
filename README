@@ -1,0 +1,121 @@
+cat > /home/pablo/overtune-github/README.md << 'EOF'
+# OVERTUNE
+
+**Music Query Service — Database Setup, ETL & Implementation**
+
+Spring 2026 | Team: Pablo E. Rodríguez Rivera, Anika Kaur, Carson Whitehouse
+
+---
+
+## Overview
+
+OVERTUNE is a music metadata query service designed to expose richer querying capabilities than mainstream platforms like Spotify or Apple Music. The database stores structured information about tracks, albums, artists, labels, producers, songwriters, genres, rights holders, and user-generated content such as playlists and reviews.
+
+**Primary data source:** [MusicBrainz](https://musicbrainz.org/) open-content music encyclopedia, supplemented by [AcousticBrainz](https://acousticbrainz.org/) for audio features (BPM, key, mode, genre).
+
+---
+
+## Databases
+
+| Database | Description |
+|---|---|
+| `overtune_demo` | Full database — 38M+ tracks, all ETL tables loaded |
+| `overtune_small` | 20,000 most-connected tracks — for development and sharing |
+
+---
+
+## Repository Structure
+---
+
+## Setup
+
+### Requirements
+
+- PostgreSQL 16
+- Python 3.10+
+- MusicBrainz database dump (loaded into `musicbrainz` schema)
+
+### Python dependencies
+
+```bash
+pip install psycopg2-binary faker requests
+```
+
+### 1. Create the database and schema
+
+```bash
+createdb -U pablo overtune_demo
+psql -U pablo -d overtune_demo -f schema/Extensions.sql
+psql -U pablo -d overtune_demo -f schema/schema.sql
+```
+
+### 2. Run the ETL (MusicBrainz -> OVERTUNE)
+
+```bash
+psql -U pablo -d overtune_demo -f etl/etl_part1a_pre_album.sql
+bash etl/etl_batch_loader.sh
+psql -U pablo -d overtune_demo -f etl/etl_part3_post_isrc.sql
+psql -U pablo -d overtune_demo -f etl/track_rightsholder.sql
+```
+
+### 3. Generate fake app data
+
+```bash
+python3 app/gen_data.py
+```
+
+### 4. Create overtune_small (20K track subset)
+
+```bash
+createdb -U pablo overtune_small
+psql -U pablo -d overtune_small -f schema/schema.sql
+python3 app/mig_small.py
+python3 app/gen_data.py
+```
+
+---
+
+## Enrichment Scripts
+
+### track_genre (AcousticBrainz high-level dump)
+
+Download the high-level sample dump from https://acousticbrainz.org/download, extract it, then:
+
+```bash
+python3 scripts/load_track_genre.py
+```
+
+### BPM, Key, Mode (AcousticBrainz feature CSVs)
+
+Download the rhythm and tonal feature CSVs from https://acousticbrainz.org/download, extract them, then:
+
+```bash
+python3 scripts/load_bpm_key_mode.py
+```
+
+### Explicit Flags (iTunes API)
+
+```bash
+python3 scripts/load_explicit_flags.py
+```
+
+---
+
+## Known Data Gaps
+
+| Field | Reason |
+|---|---|
+| `track.explicit_flag` | No open data source with sufficient coverage |
+| `album.explicit_flag` | Same |
+| `track.bpm/key/mode` | ~20% of tracks not in AcousticBrainz |
+| `label.website` | ~23% coverage from MusicBrainz URL data |
+| `track_genre` | AcousticBrainz classifier vocabulary does not align with MusicBrainz genre names |
+
+---
+
+## Safety Rules
+
+- Never run `pg_dump` and a large INSERT simultaneously.
+- Always use `search_path = public, musicbrainz, pg_catalog`.
+- Never DROP or TRUNCATE without making a backup first.
+EOF
