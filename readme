@@ -1,0 +1,76 @@
+# OVERTUNE
+
+**Music Query Service — Database Setup & Documentation**
+
+Spring 2026 | Team: Pablo E. Rodríguez Rivera, Anika Kaur, Carson Whitehouse
+
+---
+
+## Overview
+
+OVERTUNE is a music metadata query service designed to expose richer querying capabilities than mainstream platforms like Spotify or Apple Music. The database stores structured information about tracks, albums, artists, labels, producers, songwriters, genres, rights holders, and user-generated content such as playlists and reviews.
+
+**Primary data source:** [MusicBrainz](https://musicbrainz.org/) open-content music encyclopedia, supplemented by [AcousticBrainz](https://acousticbrainz.org/) for audio features (BPM, key, mode, genre).
+
+---
+
+## Setup
+
+### Requirements
+
+- PostgreSQL 16
+
+### 1. Restore the database
+
+```bash
+createdb -U postgres overtune_small
+pg_restore -U postgres -d overtune_small -F c overtune_small.dump
+```
+
+### 2. Verify the restore
+
+```bash
+psql -U postgres -d overtune_small -c "SELECT relname AS table, n_live_tup AS rows FROM pg_stat_user_tables WHERE schemaname = 'public' ORDER BY n_live_tup DESC;"
+```
+
+### 3. Connect
+
+```bash
+psql -U postgres -d overtune_small
+```
+
+---
+
+## Database Summary
+
+27 tables, 20,000 tracks — a consistent subset of the full MusicBrainz catalog.
+
+| Category | Tables |
+|---|---|
+| Base | User, artist, consumer, producer, label, rightsholder, genre, album, track, playlist, review |
+| Junction | track_album, track_artist, track_isrc, track_producer, track_songwriter, track_rightsholder, track_genre, label_album, label_artist, artist_member, may_be |
+| App-generated | playlist_track, makes, written_by, gets, consumer_track_rating |
+
+### Key row counts
+
+| Table | Rows |
+|---|---|
+| track | 20,000 |
+| track_album | 691,418 |
+| track_artist | 373,247 |
+| album | 113,703 |
+| artist | 53,939 |
+| track with BPM | ~15,907 |
+| track_genre | 2,160 |
+
+---
+
+## Known Data Gaps
+
+| Field | Reason |
+|---|---|
+| track.explicit_flag | No open data source with sufficient coverage |
+| album.explicit_flag | Same |
+| track.bpm/key/mode | ~20% of tracks not in AcousticBrainz |
+| label.website | ~23% coverage from MusicBrainz URL data |
+| track_genre | AcousticBrainz classifier vocabulary does not align with MusicBrainz genre names |
