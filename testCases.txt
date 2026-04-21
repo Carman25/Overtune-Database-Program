@@ -1,0 +1,307 @@
+Connected to overtune_small @ localhost
+
+------------------------------------------------------------
+ MUSIC STREAMING DATABASE — CLI
+------------------------------------------------------------
+
+  --- BROWSE / SEARCH ---
+   1. Search tracks by title
+    Select option: 1
+    Track title contains: high
+    Max results [20]: 5 
+    track_id | title                                    | duration_sec | artists                                  | explicit_flag
+    -----------------------------------------------------------------------------------------------------------------------------
+    4972706  | (Your Love Has Lifted Me) Higher and ... | 240          | Rita Coolidge                            | False        
+    15172853 | (Your Love Keeps Lifting Me) Higher a... | 177          | Jackie Wilson, James Jamerson, Johnny... | False        
+    224398   | Ain’t No Mountain High Enough            | 148          | Marvin Gaye, Tammi Terrell               | False        
+    562878   | Ain’t No Mountain High Enough            | 212          | Diana Ross, Paul Riser                   | False        
+    515978   | Angels We Have Heard on High             | 250          | Ashley Ingram, Brad Haehnel, Celebrit... | False        
+
+    5 row(s)        
+
+   2. Search artists by name
+    Select option: 2
+    Artist name contains: Rita Coolidge
+    Max results [20]: 5 
+    artist_id | name          | country       | type   | formed_year | track_count
+    ------------------------------------------------------------------------------
+    4696      | Rita Coolidge | United States | Person | 1945        | 6
+
+    1 row(s)        
+
+   3. Search albums by title
+    Select option: 3
+    Album title contains: love
+    Max results [20]: 5
+    album_id | title                                    | release_date | explicit_flag | track_count
+    ------------------------------------------------------------------------------------------------
+    4601247  | Hello, I Love You: The Doors             | 2026-02-02   | False         | 4
+    4598038  | Good Company: Bad Company Love Songs     | 2026-01-28   | False         | 1
+    4472603  | Nothing But Love: The Definitive Best Of | 2025-11-21   | False         | 1
+    4612967  | The Best: Love                           | 2025-11-14   | False         | 2
+    4516748  | Love Love Love Love Love                 | 2025-10-17   | False         | 2
+
+    5 row(s)
+  
+   4. Search users by username/email
+    Select option: 4
+    Username or email contains: Stevie Wonder
+    Max results [20]: 1
+    user_id | username      | email | join_date | country       | role  
+    --------------------------------------------------------------------
+    29      | Stevie Wonder |       |           | United States | Artist
+
+    1 row(s)
+
+   5. Search producers by name
+    Select option: 5
+    Producer name contains: Stevie Wonder
+    Max results [20]: 
+    producer_id | name          | country       | birth_year | artist_alias 
+    ------------------------------------------------------------------------
+    29          | Stevie Wonder | United States | 1950       | Stevie Wonder
+
+    1 row(s)
+   
+   6. Search labels by name
+    Select option: 6
+    Label name contains: Vagrant
+    Max results [20]: 
+    label_id | name            | country       | founded_year | website              | album_count | artist_count
+    -------------------------------------------------------------------------------------------------------------
+    138      | Vagrant Records | United States | 1996         | https://vagrant.com/ | 5           | 18
+
+    1 row(s)
+  
+   7. Search rights holders by name
+    Select option: 7
+    Rights holder name contains: Vagrant
+    Max results [20]: 
+    rights_id | holder_name     | pro_affiliation | contact_email
+    -------------------------------------------------------------
+    138       | Vagrant Records |                 |
+
+    1 row(s)
+  
+   8. View track details (genres + artists)
+    Track ID [1]: 1553857
+    track_id | title                                 | duration_sec | bpm    | key | mode  | explicit_flag | artists      | genres
+    ------------------------------------------------------------------------------------------------------------------------------        
+    1553857  | (Dear Mr. Gable) You Made Me Love You | 192          | 108.58 | D#  | major | False         | Judy Garland |
+
+    Track ID [1]: 303
+    track_id | title                | duration_sec | bpm    | key | mode  | explicit_flag | artists                                  | genres
+    ------------------------------------------------------------------------------------------------------------------------------------------------------
+    303      | I Think I’m Paranoid | 218          | 113.84 | A#  | major | False         | Billy Bush, Daniel Shulman, Garbage, ... | ambient, electronic
+    303 contains two genred ids which are 15 and 132 which correspond to ambient and electronic respectively
+
+   9. List tracks by artist ID
+   Artist ID [1]: 4696 --> Rita Coolidge
+    track_id | title                                    | duration_sec | role   
+    ----------------------------------------------------------------------------
+    4972706  | (Your Love Has Lifted Me) Higher and ... | 240          | primary
+    1314811  | Cry Me A River                           | 238          | vocal
+    435160   | Let It Rain                              | 303          | vocal
+    1157806  | Love the One You’re With                 | 186          | vocal
+    481463   | We’re All Alone                          | 217          | primary
+    33874159 | Why Me                                   | 208          | vocal
+
+  10. List tracks on album ID
+  Album ID [1]: 4601247
+    track_id | title             | track_number | duration_sec
+    ----------------------------------------------------------
+    23018791 | Hello, I Love You | 1            | 136
+    153816   | Love Her Madly    | 3            | 199
+    178597   | Wishful Sinful    | 5            | 178
+    23018775 | Light My Fire     | 6            | 428
+  
+  11. View songwriting credits for track
+  Track ID [1]: 23018775
+    track_title   | songwriter    | contribution
+    --------------------------------------------
+    Light My Fire | Jim Morrison  | writer
+    Light My Fire | John Densmore | writer
+    Light My Fire | Ray Manzarek  | writer
+    Light My Fire | Robby Krieger | writer
+
+  12. View producer credits for track
+    Track ID [1]: 23018775
+    track_title   | producer          | credit_type
+    -----------------------------------------------
+    Light My Fire | Paul A. Rothchild |
+
+  13. View group members for artist
+    Group artist ID [1]: 30
+    group_name      | member_name | instrument | join_year | leave_year
+    -------------------------------------------------------------------
+    The Stone Roses | Ian Brown   |            |           |
+    The Stone Roses | John Squire |            |           |
+    The Stone Roses | Mani        |            |           |
+    The Stone Roses | Reni        |            |           |
+
+  14. View playlists for user
+    User ID [1]: 2188048
+    playlist_id | name                  | is_public | created_date | track_count
+    ----------------------------------------------------------------------------
+    111         | Organic holistic core | True      | 2023-12-22   | 0
+
+      1 row(s)
+
+    User ID [1]: 2463998
+    playlist_id | name                               | is_public | created_date | track_count
+    -----------------------------------------------------------------------------------------
+    91          | Managed homogeneous attitude       | True      | 2025-03-28   | 1
+    14630       | Integrated next generation project | True      | 2020-12-29   | 3
+
+      2 row(s)
+    
+  15. View tracks on playlist
+    Playlist ID [1]: 91
+    track_id | title | duration_sec | added_at
+    -----------------------------------------------------
+    23113106 | Fin   |              | 2020-09-27 21:57:06
+
+      1 row(s)
+
+  16. View rights holders for track
+  Track ID [1]: 23018775
+    track_title   | holder_name                              | pro_affiliation | rights_type | percentage
+    -----------------------------------------------------------------------------------------------------
+    Light My Fire | Rhino                                    |                 | master      |
+    Light My Fire | Euro Sound                               |                 | master      |
+    Light My Fire | Rhino Vinyl                              |                 | master      |
+    Light My Fire | Target Music                             |                 | master      |
+    Light My Fire | Warner Music                             |                 | master      |
+    Light My Fire | Media Markt                              |                 | master      |
+    Light My Fire | Квадро-Диск                              |                 | master      |
+    Light My Fire | Music Factory                            |                 | master      |
+    Light My Fire | Duchesse                                 |                 | master      |
+    Light My Fire | Time–Life Music                          |                 | master      |
+    Light My Fire | Star Mark                                |                 | master      |
+    Light My Fire | Magnum                                   |                 | master      |
+    Light My Fire | Doors Music Company                      |                 | master      |
+    Light My Fire | Mobile Fidelity Sound Lab                |                 | master      |
+    Light My Fire | Starlife                                 |                 | master      |
+    Light My Fire | Universe                                 |                 | master      |
+    Light My Fire | [no label]                               |                 | master      |
+    Light My Fire | Audio Fidelity                           |                 | master      |
+    Light My Fire | Falcon Neue Medien                       |                 | master      |
+    Light My Fire | Multimedia GmbH & Co. Musikverlag KG     |                 | master      |
+    Light My Fire | Aile Disque Co., Ltd.                    |                 | master      |
+    Light My Fire | Elektra                                  |                 | master      |
+    Light My Fire | BMG Direct Marketing, Inc.               |                 | master      |
+    Light My Fire | Hear Music                               |                 | master      |
+    Light My Fire | Warner Strategic Marketing International |                 | master      |
+    Light My Fire | DCC Compact Classics                     |                 | master      |
+    Light My Fire | Analogue Productions                     |                 | master      |
+    Light My Fire | RMG Records                              |                 | master      |
+    Light My Fire | X5 Music Group                           |                 | master      |
+
+      29 row(s)
+  
+  17. View ISRCs for track
+    Track ID [1]: 23018775
+    track_title   | isrc         | is_primary
+    -----------------------------------------
+    Light My Fire | USEE10608278 | True
+    Light My Fire | USEE11200525 | False
+    Light My Fire | USEE19900203 | False
+    Light My Fire | USRH11605641 | False
+
+  18. View artist/producer links (May_Be)
+    Artist ID [1]: 29
+    artist_name   | producer_name | producer_id
+    -------------------------------------------
+    Stevie Wonder | Stevie Wonder | 29
+
+      1 row(s)
+
+    Artist ID [1]: 520226
+    (no results)
+    --> Artist (Barry St. John) but not producer
+  
+  19. View reviews by consumer (Written_By)
+    Consumer (user) ID [1]: 1959995
+    review_id | rating | review_text                              | created_at          | track_title
+    ----------------------------------------------------------------------------------------------------------------------------
+    1         | 10     | As event moment doctor group that adm... | 2022-05-12 14:05:30 | Zuckerpuppe (aus der Bauchtanz-Truppe)
+    5778      | 7      | Help whom cause after author year keep.  | 2020-04-29 02:42:56 | You Are Amazing
+
+      2 row(s)
+
+  20. View reviews for track (Gets)
+    Track ID [1]: 23018775
+    review_id | rating | review_text                              | created_at          | reviewer    
+    --------------------------------------------------------------------------------------------------
+    12205     | 9      | New personal color owner. Might quick... | 2023-08-09 09:33:07 | cperez9740
+    1721      | 10     | Type matter something house level pre... | 2018-04-10 17:57:29 | trosales7594
+
+      2 row(s)
+
+  --- REPORTS ---
+  21. Report: top-rated tracks
+    Minimum number of ratings [1]: 5
+    Max results [10]: 5
+    track_id | title                         | artists                                  | avg_rating | num_ratings
+    --------------------------------------------------------------------------------------------------------------
+    12632216 | Camelot Lives                 | Alan Estes, Alan Grunfeld, Alexander ... | 10.00      | 165
+    14337449 | Siyah Ebrulerin Duruben Çatma | Adnan Mungan, Arif Özgülüş, Arzu Özgü... | 10.00      | 158
+    2803479  | Dragonland's Rivers           | Alena Sobolová, Aleš Pavlorek, Alex H... | 10.00      | 140
+    39762789 | Ozdust Duet                   | Adrian Bradbury, Alexei Watkins, Andy... | 10.00      | 129
+    26729752 | Gruppen                       | Adri van Velzen, Alexei Diorditsa, Al... | 10.00      | 121
+
+  5 row(s)
+  22. Report: popular genres
+    Max results [20]: 20
+    genre_id | name                | track_count | avg_rating
+    ---------------------------------------------------------
+    132      | electronic          | 887         | 5.46
+    15       | ambient             | 648         | 5.40
+    399      | trance              | 258         | 5.41
+    298      | pop                 | 215         | 5.53
+    203      | house               | 84          | 6.15
+    42       | blues               | 41          | 5.49
+    222      | jazz                | 13          | 4.62
+    346      | rock                | 11          | 6.00
+    393      | techno              | 3           | 2.00
+    7        | alternative country | 0           |
+  23. Report: most prolific artists
+    Max results [10]: 5
+    artist_id | name                      | track_count | album_count
+    -----------------------------------------------------------------
+    101       | Frank Sinatra             | 577         | 1201
+    757838    | Armand Kaproff            | 366         | 543
+    390730    | Peter Kent                | 331         | 144
+    389864    | Ken Yerke                 | 329         | 173
+    331264    | Hollywood Studio Symphony | 329         | 24
+
+    5 row(s)
+  24. Report: most recent reviews
+    review_id | rating | review_text                              | created_at          | track_title                 | reviewer 
+
+    -----------------------------------------------------------------------------------------------------------------------------------
+    4222      | 5      | Later open specific heavy attack drea... | 2025-12-31 20:46:38 | Don’t Give Up on Us         | jefferywade6839
+    14813     | 3      | Of keep both property.                   | 2025-12-31 20:05:53 | Opening Titles              | brayshelly5537
+    4680      | 5      | Describe best close. Pick happy or wo... | 2025-12-31 07:23:41 | Soul Rebel                  | melanie402978
+    13578     | 6      | Create join matter music same lay. Bu... | 2025-12-31 04:23:52 | UMA Summer                  | atkinsryan7001
+    8440      | 7      | Car animal street so fly alone man. A... | 2025-12-31 02:26:18 | Just When I Needed You Most | bradley666847
+
+      5 row(s)
+  25. Report: label catalog sizes
+    Max results [10]: 5
+    label_id | name       | country        | album_count | artist_count
+    -------------------------------------------------------------------
+    62793    | EMI        | United Kingdom | 3748        | 1492
+    235      | Columbia   | United States  | 3576        | 1777
+    5662     | Sony Music | United States  | 3575        | 1357
+    4        | Rhino      | United States  | 2619        | 879
+    15857    | Polydor    | United Kingdom | 2176        | 1222
+
+      5 row(s)
+  26. Report: genre tree (sub-genres)
+
+  --- ADMIN ---
+  All function as intended
+  27. Toggle truncation
+  28. Set truncation column width
+   q. Quit

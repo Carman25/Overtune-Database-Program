@@ -40,13 +40,19 @@ DB_CONFIG = {
 SCHEMA_FILE = Path(__file__).parent / "schema.sql"
  
 # Default max characters per column when truncation is on.
-DEFAULT_MAX_COL_WIDTH = 40
+default_max_col_width = 40
+truncation_enabled = True
+truncation_width = default_max_col_width
 
 # Embedded SQL queries
 # %s placeholders to prevent string SQL injection
  
 QUERIES = {
     # BROWSE / SEARCH
+    # Strips away input such that searching for a specific word like "rat" results in Congratulations
+    # Expansion would be to add a more specific search that matches whole words only
+    # Could add a separate "search tracks by ISRC" query.
+    # Note: COALESCE is used to treat NULLs as empty strings, so they don't match anything.
     "search_tracks": """
         SELECT t.track_id,
                t.title,
@@ -103,6 +109,8 @@ QUERIES = {
                STRING_AGG(DISTINCT a.name, ', ') AS artists,
                STRING_AGG(DISTINCT g.name, ', ') AS genres
         FROM Track t
+        LEFT JOIN Track_ISRC ti   ON ti.track_id = t.track_id AND ti.is_primary = TRUE
+        -- TODO: Is the is primary required?--
         LEFT JOIN Track_Artist ta ON ta.track_id = t.track_id
         LEFT JOIN Artist a        ON a.user_id  = ta.artist_id
         LEFT JOIN Track_Genre tg  ON tg.track_id = t.track_id
@@ -125,6 +133,28 @@ QUERIES = {
         JOIN Track_Album ta ON ta.track_id = t.track_id
         WHERE ta.album_id = %s
         ORDER BY ta.track_number NULLS LAST, t.title;
+    """,
+
+    # Tables: "User", Artist, Consumer (IS-A hierarchy)
+    "search_users": """
+        SELECT u.user_id,
+               u.username,
+               u.email,
+               u.join_date,
+               u.country,
+               CASE
+                   WHEN a.user_id IS NOT NULL AND c.user_id IS NOT NULL THEN 'Artist + Consumer'
+                   WHEN a.user_id IS NOT NULL THEN 'Artist'
+                   WHEN c.user_id IS NOT NULL THEN 'Consumer'
+                   ELSE 'User'
+               END AS role
+        FROM "User" u
+        LEFT JOIN Artist a   ON a.user_id = u.user_id
+        LEFT JOIN Consumer c ON c.user_id = u.user_id
+        WHERE LOWER(COALESCE(u.username, '')) LIKE LOWER(%s)
+           OR LOWER(COALESCE(u.email, ''))    LIKE LOWER(%s)
+        ORDER BY u.username
+        LIMIT %s;
     """,
 
     "search_producers": """
@@ -164,6 +194,7 @@ QUERIES = {
     """,
 
     # Tables: Artist_Member, Artist (self-referential M:N)
+    # TODO: How does a user get group ID?
     "group_members": """
         SELECT grp.name   AS group_name,
                mem.name   AS member_name,
@@ -184,9 +215,10 @@ QUERIES = {
                pl.is_public,
                pl.created_date,
                COUNT(DISTINCT pt.track_id) AS track_count
-        FROM Playlist pl
+        FROM Makes m
+        JOIN Playlist pl ON pl.playlist_id = m.playlist_id
         LEFT JOIN Playlist_Track pt ON pt.playlist_id = pl.playlist_id
-        WHERE pl.user_id = %s
+        WHERE m.user_id = %s
         GROUP BY pl.playlist_id
         ORDER BY pl.created_date DESC NULLS LAST;
     """,
@@ -215,6 +247,17 @@ QUERIES = {
         JOIN RightsHolder rh ON rh.rights_id = tr.rights_id
         WHERE tr.track_id = %s
         ORDER BY tr.percentage DESC NULLS LAST;
+    """,
+
+        # Tables: Track_ISRC, Track
+    "track_isrcs": """
+        SELECT t.title   AS track_title,
+               ti.isrc,
+               ti.is_primary
+        FROM Track_ISRC ti
+        JOIN Track t ON t.track_id = ti.track_id
+        WHERE ti.track_id = %s
+        ORDER BY ti.is_primary DESC, ti.isrc;
     """,
 
     # Tables: Label, Label_Album, Label_Artist
@@ -260,6 +303,7 @@ QUERIES = {
     """,
 
     # Tables: Written_By, Consumer, Review
+    # TODO: How does a user fetch consumer ID?
     "consumer_reviews": """
         SELECT r.review_id,
                r.rating,
@@ -306,6 +350,9 @@ QUERIES = {
         LIMIT %s;
     """,
  
+    # Only 2160 tracks have genre tags in the small dataset
+    # Demonstrates aggregation and sorting by multiple criteria.
+    # Gives a total of 9 actual genres with real results
     "popular_genres": """
         SELECT g.genre_id,
                g.name,
@@ -361,6 +408,7 @@ QUERIES = {
         LIMIT %s;
     """,
 
+    # Not easily manipulable to find a specific genre
     "genre_tree": """
         SELECT g.genre_id,
                g.name,
@@ -404,7 +452,7 @@ def run_query(conn, key, params=()):
  
 # Display helpers
  
-def print_table(rows, headers=None,truncate=True, max_col_width=DEFAULT_MAX_COL_WIDTH):
+def print_table(rows, headers=None,truncate=None, max_col_width=None):
     """Print a list of dict rows as an aligned table.
     Args:
         rows:          List of dicts (one per row).
@@ -412,6 +460,12 @@ def print_table(rows, headers=None,truncate=True, max_col_width=DEFAULT_MAX_COL_
         truncate:      If True, clip long cell values at max_col_width.
         max_col_width: Maximum characters per column when truncate is on.
     """
+    # Truncation administration
+    if truncate is None:
+        truncate = truncation_enabled
+    if max_col_width is None:
+        max_col_width = truncation_width
+    
     if not rows:
         print("  (no results)\n")
         return
@@ -457,6 +511,8 @@ def prompt_int(msg, default):
  
 
 # Menu actions
+# The number after Max results is the default value that will be used if the user
+# presses enter without inputing anything.
  
 def action_search_tracks(conn):
     term = prompt("Track title contains")
@@ -489,6 +545,14 @@ def action_artist_tracks(conn):
 def action_album_tracks(conn):
     aid = prompt_int("Album ID", 1)
     rows = run_query(conn, "album_tracks", (aid,))
+    print_table(rows)
+
+# Find Users to find playlists under their ID.
+# Note: Users are not artists or consumers by default, but may be either or both.
+def action_search_users(conn):
+    term = prompt("Username or email contains")
+    limit = prompt_int("Max results", 20)
+    rows = run_query(conn, "search_users", (f"%{term}%", f"%{term}%", limit))
     print_table(rows)
 
 def action_search_producers(conn):
@@ -532,6 +596,10 @@ def action_track_rights(conn):
     rows = run_query(conn, "track_rights", (tid,))
     print_table(rows)
 
+def action_track_isrcs(conn):
+    tid = prompt_int("Track ID", 1)
+    rows = run_query(conn, "track_isrcs", (tid,))
+    print_table(rows)
 
 def action_search_labels(conn):
     term = prompt("Label name contains")
@@ -600,12 +668,29 @@ def action_genre_tree(conn):
     print_table(rows)
 
 
-def action_init_schema(conn):
-    confirm = prompt("This will drop and recreate all tables. Type 'yes' to confirm")
-    if confirm.lower() == "yes":
-        init_schema(conn)
-    else:
-        print("  cancelled.\n")
+# Deprecated: no longer using schema
+#   def action_init_schema(conn):
+#     confirm = prompt("This will drop and recreate all tables. Type 'yes' to confirm")
+#     if confirm.lower() == "yes":
+#         init_schema(conn)
+#     else:
+#         print("  cancelled.\n")
+
+def action_toggle_truncation(conn):
+    global truncation_enabled
+    truncation_enabled = not truncation_enabled
+    state = "ON" if truncation_enabled else "OFF"
+    print(f"  Truncation is now {state} (max width: {truncation_width})\n")
+
+
+def action_set_truncation_width(conn):
+    global truncation_width
+    new_width = prompt_int("Max column width", truncation_width)
+    if new_width < 10:
+        print("  Minimum width is 10.\n")
+        return
+    truncation_width = new_width
+    print(f"  Truncation width set to {truncation_width}\n")
  
 # Menu dashboard. Each entry is a (label, function) pair.
 # MENU = [
@@ -627,7 +712,7 @@ MENU = [
     ("Search tracks by title",              action_search_tracks),
     ("Search artists by name",              action_search_artists),
     ("Search albums by title",              action_search_albums),
-    # ("Search users by username/email",      action_search_users),
+    ("Search users by username/email",      action_search_users),
     ("Search producers by name",            action_search_producers),
     ("Search labels by name",               action_search_labels),
     ("Search rights holders by name",       action_search_rightsholders),
@@ -636,10 +721,11 @@ MENU = [
     ("List tracks on album ID",             action_album_tracks),
     ("View songwriting credits for track",  action_track_songwriters),
     ("View producer credits for track",     action_track_producers),
-    ("View group members for artist",       action_group_members),
+    ("View group members for artist by Group ID", action_group_members),
     ("View playlists for user",             action_user_playlists),
     ("View tracks on playlist",             action_playlist_tracks),
     ("View rights holders for track",       action_track_rights),
+    ("View ISRCs for track",                action_track_isrcs),
     ("View artist/producer links (May_Be)", action_artist_producer_links),
     ("View reviews by consumer (Written_By)", action_consumer_reviews),
     ("View reviews for track (Gets)",       action_track_reviews),
@@ -651,15 +737,27 @@ MENU = [
     ("Report: label catalog sizes",         action_label_catalog),
     ("Report: genre tree (sub-genres)",     action_genre_tree),
     # -- Admin --
-    ("(Re)initialize schema from schema.sql", action_init_schema),
+    # ("(Re)initialize schema from schema.sql", action_init_schema),
+    ("Toggle truncation",            action_toggle_truncation),
+    ("Set truncation column width",         action_set_truncation_width),
 ]
  
 def show_menu():
     print("\n" + "-" * 60)
     print(" MUSIC STREAMING DATABASE — CLI")
     print("-" * 60)
-    for i, (label, _) in enumerate(MENU, 1):
-        print(f"  {i:2}. {label}")
+    
+    # Menu Sections
+    sections = [
+        ("BROWSE / SEARCH", 0, 20),
+        ("REPORTS",         20, 26),
+        ("ADMIN",           26, len(MENU)),
+    ]
+    for section_name, start, end in sections:
+        print(f"\n  --- {section_name} ---")
+        for i in range(start, end):
+            label = MENU[i][0]
+            print(f"  {i + 1:2}. {label}")
     print("   q. Quit")
     print("-" * 60)
  
