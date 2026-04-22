@@ -310,20 +310,81 @@ Connected to overtune_small @ localhost
     Submit this review? (yes/no) [yes]: yes
     Review #20002 created successfully.
 
-28. Create Playlist
-  Creating playlist as user ID: 20
-  Playlist name: TestPlaylist
-  Description (optional) []: 
-  Public? (yes/no) [yes]: yes
-  Playlist #20001 'TestPlaylist' created successfully.
-  Add a track? (yes/no) [no]: yes
-  Track ID to add [1]: 224398
-  Track 224398 added to playlist.
+  28. Create Playlist
+    Creating playlist as user ID: 20
+    Playlist name: TestPlaylist
+    Description (optional) []: 
+    Public? (yes/no) [yes]: yes
+    Playlist #20001 'TestPlaylist' created successfully.
+    Add a track? (yes/no) [no]: yes
+    Track ID to add [1]: 224398
+    Track 224398 added to playlist.
+    Add a track? (yes/no) [no]: no
+    
+  29. Add tracks to existing playlist
+    Fetching playlists for user ID: 20
+    playlist_id | name
+    -----------------------------------------------------
+    16404       | Advanced actuating structure
+    8885        | Cross-platform methodical collaboration
+    20001       | TestPlaylist
 
-Add a track? (yes/no) [no]: no
+      3 row(s)
+
+    Enter playlist_id from above [16404]: 20001
+    Track ID to add (or 'done' to stop): 23018775
+      Adding: Light My Fire
+      Track 23018775 added.
+
+    Track ID to add (or 'done' to stop): done
+  
+  30. Remove track from playlist
+    Select option: 30
+    Fetching playlists for user ID: 20
+    playlist_id | name
+    -----------------------------------------------------
+    16404       | Advanced actuating structure
+    8885        | Cross-platform methodical collaboration
+    20001       | TestPlaylist
+
+      3 row(s)
+
+    Enter playlist_id from above [16404]: 20001
+    track_id | title                         | duration_sec | added_at
+    ------------------------------------------------------------------------------------
+    224398   | Ain’t No Mountain High Enough | 148          | 2026-04-22 03:40:10.370872
+    23018775 | Light My Fire                 | 428          | 2026-04-22 03:57:28.854726
+
+      2 row(s)
+
+    Track ID to remove (or 'done' to stop): 23018775
+      Track 23018775 removed from playlist 20001.
+
+    Track ID to remove (or 'done' to stop): done
+
+    Select option: 15
+    Playlist ID [1]: 20001
+    track_id | title                         | duration_sec | added_at
+    ------------------------------------------------------------------------------------
+    224398   | Ain’t No Mountain High Enough | 148          | 2026-04-22 03:40:10.370872
+
+      1 row(s)
 
   --- ADMIN ---
   All function as intended
-  29. Toggle truncation
-  30. Set truncation column width
+  31. Who am I?
+    Select option: 31
+
+    User ID:      20
+    Username:     Art of Noise
+    Email:        (none)
+    Country:      United Kingdom
+    Join date:    (none)
+    Role:         Artist + Consumer
+    Display name: megan658862
+    Artist name:  Art of Noise
+    Artist type:  Group
+    
+  32. Toggle truncation
+  33. Set truncation column width
    q. Quit
