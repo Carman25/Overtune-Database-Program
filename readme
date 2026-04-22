@@ -26,6 +26,7 @@ OVERTUNE is a music metadata query service designed to expose richer querying ca
 createdb -U postgres overtune_small
 pg_restore -U postgres -d overtune_small -F c overtune_small.dump
 ```
+May need --no-owner and --no-privileges flags
 
 ### 2. Verify the restore
 
@@ -70,7 +71,7 @@ psql -U postgres -d overtune_small
 | Field | Reason |
 |---|---|
 | track.explicit_flag | No open data source with sufficient coverage |
-| album.explicit_flag | Same |
+| album.explicit_flag | Same issues as track.explicit_flag |
 | track.bpm/key/mode | ~20% of tracks not in AcousticBrainz |
 | label.website | ~23% coverage from MusicBrainz URL data |
 | track_genre | AcousticBrainz classifier vocabulary does not align with MusicBrainz genre names |

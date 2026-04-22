@@ -3,7 +3,7 @@
 Music Streaming Database — Command Line Interface
  
 A CLI for browsing/searching a music streaming database and generating
-reports. The database schema is loaded from `schema.sql` (PostgreSQL),
+reports. The database schema is loaded from a .dump file into (PostgreSQL),
 and all queries are embedded as parameterized SQL inside this script.
  
 Usage:
@@ -19,7 +19,9 @@ Requirements:
 import os
 import sys
 from pathlib import Path
- 
+
+sys.path.insert(0, str(Path(__file__).parent))
+
 try:
     import psycopg2
     from psycopg2.extras import RealDictCursor
@@ -38,6 +40,10 @@ DB_CONFIG = {
 }
  
 SCHEMA_FILE = Path(__file__).parent / "schema.sql"
+
+# Default consumer/user ID for creating content from the CLI.
+# Change this to match a valid Consumer in your database.
+DEFAULT_USER_ID = 20
  
 # Default max characters per column when truncation is on.
 default_max_col_width = 40
@@ -194,7 +200,6 @@ QUERIES = {
     """,
 
     # Tables: Artist_Member, Artist (self-referential M:N)
-    # TODO: How does a user get group ID?
     "group_members": """
         SELECT grp.name   AS group_name,
                mem.name   AS member_name,
@@ -206,6 +211,15 @@ QUERIES = {
         JOIN Artist mem ON mem.user_id = am.member_artist_id
         WHERE am.group_artist_id = %s
         ORDER BY am.join_year NULLS LAST, mem.name;
+    """,
+    # Helper: find group artists
+    "find_groups": """
+        SELECT DISTINCT a.user_id AS group_id, a.name
+        FROM Artist a
+        JOIN Artist_Member am ON am.group_artist_id = a.user_id
+        WHERE LOWER(COALESCE(a.name, '')) LIKE LOWER(%s)
+        ORDER BY a.name
+        LIMIT %s;
     """,
 
     # Tables: Playlist, "User", Playlist_Track, Makes
@@ -303,7 +317,6 @@ QUERIES = {
     """,
 
     # Tables: Written_By, Consumer, Review
-    # TODO: How does a user fetch consumer ID?
     "consumer_reviews": """
         SELECT r.review_id,
                r.rating,
@@ -315,6 +328,19 @@ QUERIES = {
         JOIN Track t    ON t.track_id   = r.track_id
         WHERE wb.consumer_id = %s
         ORDER BY r.created_at DESC NULLS LAST;
+    """,
+
+    # Helper: find consumers
+    "find_consumers": """
+        SELECT c.user_id AS consumer_id,
+               c.display_name,
+               u.username
+        FROM Consumer c
+        JOIN "User" u ON u.user_id = c.user_id
+        WHERE LOWER(COALESCE(c.display_name, '')) LIKE LOWER(%s)
+           OR LOWER(COALESCE(u.username, ''))     LIKE LOWER(%s)
+        ORDER BY c.display_name
+        LIMIT %s;
     """,
 
     # Tables: Gets, Review, Track
@@ -418,6 +444,44 @@ QUERIES = {
         LEFT JOIN Genre parent ON parent.genre_id = g.parent_genre_id
         ORDER BY parent.name NULLS FIRST, g.name
         LIMIT %s;
+    """,
+
+    # INSERT: create a new review
+    "create_review": """
+        INSERT INTO Review (rating, review_text, created_at, consumer_id, track_id)
+        VALUES (%s, %s, CURRENT_TIMESTAMP, %s, %s)
+        RETURNING review_id;
+    """,
+
+    # INSERT: link review via Written_By
+    "create_written_by": """
+        INSERT INTO Written_By (consumer_id, review_id)
+        VALUES (%s, %s);
+    """,
+
+    # INSERT: link review via Gets
+    "create_gets": """
+        INSERT INTO Gets (review_id, track_id)
+        VALUES (%s, %s);
+    """,
+
+    # INSERT: create a new playlist
+    "create_playlist": """
+        INSERT INTO Playlist (name, description, created_date, is_public, user_id)
+        VALUES (%s, %s, CURRENT_DATE, %s, %s)
+        RETURNING playlist_id;
+    """,
+
+    # INSERT: link playlist via Makes
+    "create_makes": """
+        INSERT INTO Makes (user_id, playlist_id)
+        VALUES (%s, %s);
+    """,
+
+    # INSERT: add a track to a playlist
+    "add_track_to_playlist": """
+        INSERT INTO Playlist_Track (playlist_id, track_id, added_at)
+        VALUES (%s, %s, CURRENT_TIMESTAMP);
     """,
 }
  
@@ -574,7 +638,16 @@ def action_track_producers(conn):
 
 
 def action_group_members(conn):
-    gid = prompt_int("Group artist ID", 1)
+    term = prompt("Search group name (or press Enter to type ID directly)")
+    if term:
+        rows = run_query(conn, "find_groups", (f"%{term}%", 10))
+        if not rows:
+            print("  No groups found matching that name.\n")
+            return
+        print_table(rows)
+        gid = prompt_int("Enter group_id from above", rows[0]["group_id"])
+    else:
+        gid = prompt_int("Group artist ID", 1)
     rows = run_query(conn, "group_members", (gid,))
     print_table(rows)
 
@@ -622,7 +695,16 @@ def action_artist_producer_links(conn):
 
 
 def action_consumer_reviews(conn):
-    cid = prompt_int("Consumer (user) ID", 1)
+    term = prompt("Search consumer name (or press Enter to type ID directly)")
+    if term:
+        rows = run_query(conn, "find_consumers", (f"%{term}%", f"%{term}%", 10))
+        if not rows:
+            print("  No consumers found matching that name.\n")
+            return
+        print_table(rows)
+        cid = prompt_int("Enter consumer_id from above", rows[0]["consumer_id"])
+    else:
+        cid = prompt_int("Consumer (user) ID", 1)
     rows = run_query(conn, "consumer_reviews", (cid,))
     print_table(rows)
 
@@ -667,6 +749,89 @@ def action_genre_tree(conn):
     rows = run_query(conn, "genre_tree", (limit,))
     print_table(rows)
 
+# Insert new reviews and playlists
+def action_create_review(conn):
+    print(f"  Creating review as user ID: {DEFAULT_USER_ID}")
+    track_id = prompt_int("Track ID to review", 1)
+
+    # Verify track exists
+    rows = run_query(conn, "track_detail", (track_id,))
+    if not rows:
+        print("  Track not found.\n")
+        return
+    print(f"  Track: {rows[0]['title']}")
+
+    while True:
+        rating = prompt_int("Rating (1-5)", 5)
+        if 1 <= rating <= 5:
+            break
+        print("  Rating must be between 1 and 5.")
+
+    review_text = prompt("Review text (optional)", "")
+    if not review_text:
+        review_text = None
+
+    confirm = prompt("Submit this review? (yes/no)", "yes")
+    if confirm.lower() != "yes":
+        print("  cancelled.\n")
+        return
+
+    with conn.cursor() as cur:
+        # Insert review
+        cur.execute(QUERIES["create_review"], (rating, review_text, DEFAULT_USER_ID, track_id))
+        review_id = cur.fetchone()[0]
+
+        # Link via Written_By
+        cur.execute(QUERIES["create_written_by"], (DEFAULT_USER_ID, review_id))
+
+        # Link via Gets
+        cur.execute(QUERIES["create_gets"], (review_id, track_id))
+
+    conn.commit()
+    print(f"  Review #{review_id} created successfully.\n")
+
+# No current action to add tracks to currently existing playlists, but that could be added as a future expansion.
+def action_create_playlist(conn):
+    print(f"  Creating playlist as user ID: {DEFAULT_USER_ID}")
+    name = prompt("Playlist name")
+    if not name:
+        print("  Name is required.\n")
+        return
+
+    description = prompt("Description (optional)", "")
+    if not description:
+        description = None
+
+    public_input = prompt("Public? (yes/no)", "yes")
+    is_public = public_input.lower() in ("yes", "y", "true")
+
+    with conn.cursor() as cur:
+        # Insert playlist
+        cur.execute(QUERIES["create_playlist"], (name, description, is_public, DEFAULT_USER_ID))
+        playlist_id = cur.fetchone()[0]
+
+        # Link via Makes
+        cur.execute(QUERIES["create_makes"], (DEFAULT_USER_ID, playlist_id))
+
+    conn.commit()
+    print(f"  Playlist #{playlist_id} '{name}' created successfully.")
+
+    # Offer to add tracks
+    while True:
+        add_more = prompt("Add a track? (yes/no)", "no")
+        if add_more.lower() not in ("yes", "y"):
+            break
+        track_id = prompt_int("Track ID to add", 1)
+        try:
+            with conn.cursor() as cur:
+                cur.execute(QUERIES["add_track_to_playlist"], (playlist_id, track_id))
+            conn.commit()
+            print(f"  Track {track_id} added to playlist.\n")
+        except psycopg2.Error as e:
+            conn.rollback()
+            print(f"  Could not add track: {e}\n")
+
+    print()
 
 # Deprecated: no longer using schema
 #   def action_init_schema(conn):
@@ -736,6 +901,9 @@ MENU = [
     ("Report: most recent reviews",         action_recent_reviews),
     ("Report: label catalog sizes",         action_label_catalog),
     ("Report: genre tree (sub-genres)",     action_genre_tree),
+    # -- Create --
+    ("Create a review",                     action_create_review),
+    ("Create a playlist (+ add tracks)",    action_create_playlist),
     # -- Admin --
     # ("(Re)initialize schema from schema.sql", action_init_schema),
     ("Toggle truncation",            action_toggle_truncation),
@@ -751,7 +919,8 @@ def show_menu():
     sections = [
         ("BROWSE / SEARCH", 0, 20),
         ("REPORTS",         20, 26),
-        ("ADMIN",           26, len(MENU)),
+        ("CREATE",          26, 28),
+        ("ADMIN",           28, len(MENU)),
     ]
     for section_name, start, end in sections:
         print(f"\n  --- {section_name} ---")

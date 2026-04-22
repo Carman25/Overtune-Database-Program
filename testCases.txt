@@ -300,8 +300,30 @@ Connected to overtune_small @ localhost
       5 row(s)
   26. Report: genre tree (sub-genres)
 
+  27. Create review
+    Will show screenshot included
+    Creating review as user ID: 20
+    Track ID to review [1]: 224398
+    Track: Ain’t No Mountain High Enough
+    Rating (1-5) [5]: 4
+    Review text (optional) []: Solid
+    Submit this review? (yes/no) [yes]: yes
+    Review #20002 created successfully.
+
+28. Create Playlist
+  Creating playlist as user ID: 20
+  Playlist name: TestPlaylist
+  Description (optional) []: 
+  Public? (yes/no) [yes]: yes
+  Playlist #20001 'TestPlaylist' created successfully.
+  Add a track? (yes/no) [no]: yes
+  Track ID to add [1]: 224398
+  Track 224398 added to playlist.
+
+Add a track? (yes/no) [no]: no
+
   --- ADMIN ---
   All function as intended
-  27. Toggle truncation
-  28. Set truncation column width
+  29. Toggle truncation
+  30. Set truncation column width
    q. Quit
